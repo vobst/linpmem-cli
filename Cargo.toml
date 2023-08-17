@@ -2,8 +2,12 @@
 name = "pmem"
 version = "0.1.0"
 edition = "2021"
+target-feature = "+crt-static"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "pmem"
+path = "src/lib.rs"
 
 [dependencies]
 clap = { version = "4.3.21", features = ["derive"] }

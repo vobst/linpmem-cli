@@ -20,18 +20,8 @@ mod ffi {
         b'a',
         bindings::LINPMEM_DATA_TRANSFER
     );
-    ioctl_readwrite!(
-        unsafe_v_to_p,
-        b'a',
-        b'b',
-        bindings::LINPMEM_VTOP_INFO
-    );
-    ioctl_readwrite!(
-        unsafe_cr3,
-        b'a',
-        b'c',
-        bindings::LINPMEM_CR3_INFO
-    );
+    ioctl_readwrite!(unsafe_v_to_p, b'a', b'b', bindings::LINPMEM_VTOP_INFO);
+    ioctl_readwrite!(unsafe_cr3, b'a', b'c', bindings::LINPMEM_CR3_INFO);
 
     pub fn read_phys(
         fd: fd::RawFd,
@@ -84,10 +74,7 @@ mod ffi {
                 // wrote.
                 unsafe {
                     out_vec.set_len(
-                        data_transfer
-                            .readbuffer_size
-                            .try_into()
-                            .unwrap(), // cannot panic on 64 bit
+                        data_transfer.readbuffer_size.try_into().unwrap(), // cannot panic on 64 bit
                     )
                 };
                 Ok(out_vec)
@@ -123,11 +110,7 @@ impl IOCtlCmd {
             ));
         }
         if let Some(address) = cli.address {
-            return Ok(Self::ReadPhys(
-                address,
-                cli.mode.unwrap(),
-                cli.size,
-            ));
+            return Ok(Self::ReadPhys(address, cli.mode.unwrap(), cli.size));
         }
 
         Err("Invalid combination of arguments")
@@ -172,12 +155,7 @@ impl Driver {
         mode: AccessMode,
         size: Option<u64>,
     ) -> Result<(), Box<dyn Error>> {
-        let mem = ffi::read_phys(
-            self.handle.as_raw_fd(),
-            address,
-            mode,
-            size,
-        )?;
+        let mem = ffi::read_phys(self.handle.as_raw_fd(), address, mode, size)?;
 
         io::stdout().write(mem.as_slice())?;
 

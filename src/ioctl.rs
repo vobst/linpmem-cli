@@ -30,15 +30,13 @@ mod ffi {
         size: Option<u64>,
     ) -> Result<Vec<u8>, nix::errno::Errno> {
         // cannot panic on 64 bit as usize == u64
-        let mut out_vec: Vec<u8> =
+        let mut mem: Vec<u8> =
             Vec::with_capacity(size.unwrap_or(0).try_into().unwrap());
         let mut data_transfer = bindings::LINPMEM_DATA_TRANSFER {
             phys_address: address,
             out_value: 0,
             readbuffer: match mode {
-                AccessMode::Buffer => {
-                    out_vec.as_mut_ptr() as *mut std::ffi::c_void
-                }
+                AccessMode::Buffer => mem.as_mut_ptr() as *mut std::ffi::c_void,
                 _ => ptr::null_mut(),
             },
             readbuffer_size: size.unwrap_or(0),
@@ -50,7 +48,7 @@ mod ffi {
                     bindings::_PHYS_ACCESS_MODE_PHYS_WORD_READ as u8
                 }
                 AccessMode::Dword => {
-                    bindings::_PHYS_ACCESS_MODE_PHYS_WORD_READ as u8
+                    bindings::_PHYS_ACCESS_MODE_PHYS_DWORD_READ as u8
                 }
                 AccessMode::Qword => {
                     bindings::_PHYS_ACCESS_MODE_PHYS_QWORD_READ as u8
@@ -73,16 +71,51 @@ mod ffi {
                 // thinks it is empty. Luckily the kernel told us how much it
                 // wrote.
                 unsafe {
-                    out_vec.set_len(
-                        data_transfer.readbuffer_size.try_into().unwrap(), // cannot panic on 64 bit
+                    // cannot panic on 64 bit
+                    mem.set_len(
+                        data_transfer.readbuffer_size.try_into().unwrap(),
                     )
                 };
-                Ok(out_vec)
+                Ok(mem)
             }
             _ => Ok(data_transfer.out_value.to_le_bytes()
                 [..mode.size().unwrap()]
                 .into()),
         }
+    }
+
+    pub fn v_to_p(
+        fd: fd::RawFd,
+        virt_address: u64,
+        pid: Option<u32>,
+    ) -> Result<u64, nix::errno::Errno> {
+        let mut data_transfer = bindings::LINPMEM_VTOP_INFO {
+            virt_address,
+            associated_cr3: match pid {
+                Some(pid) => cr3(fd, Some(pid))?,
+                None => 0,
+            },
+            phys_address: 0,
+            ppte: ptr::null_mut(),
+        };
+
+        let _result = unsafe { unsafe_v_to_p(fd, &mut data_transfer) }?;
+
+        Ok(data_transfer.phys_address)
+    }
+
+    pub fn cr3(
+        fd: fd::RawFd,
+        pid: Option<u32>,
+    ) -> Result<u64, nix::errno::Errno> {
+        let mut data_transfer = bindings::LINPMEM_CR3_INFO {
+            target_process: pid.unwrap_or(0) as u64,
+            result_cr3: 0,
+        };
+
+        let _result = unsafe { unsafe_cr3(fd, &mut data_transfer) }?;
+
+        Ok(data_transfer.result_cr3)
     }
 }
 
@@ -128,16 +161,25 @@ impl Driver {
         Ok(Self { handle })
     }
 
-    pub fn cr3(&self, pid: Option<u32>) -> Result<(), &'static str> {
-        Err("Cr3 query is not implemented")
+    pub fn cr3(&self, pid: Option<u32>) -> Result<(), Box<dyn Error>> {
+        let cr3_pa = ffi::cr3(self.handle.as_raw_fd(), pid)?;
+
+        println!("0x{:016x}", cr3_pa);
+
+        Ok(())
     }
 
     pub fn v_to_p(
         &self,
         virt_address: u64,
         pid: Option<u32>,
-    ) -> Result<(), &'static str> {
-        Err("Virtual to physical translation is not implemented")
+    ) -> Result<(), Box<dyn Error>> {
+        let phys_address =
+            ffi::v_to_p(self.handle.as_raw_fd(), virt_address, pid)?;
+
+        println!("0x{:016x}", phys_address);
+
+        Ok(())
     }
 
     pub fn write_phys(
@@ -146,7 +188,7 @@ impl Driver {
         mode: AccessMode,
         data: Vec<u8>,
     ) -> Result<(), &'static str> {
-        Err("Physical write is not implemented")
+        Err("Writing of physical memory is not implemented")
     }
 
     pub fn read_phys(

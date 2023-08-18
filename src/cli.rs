@@ -10,6 +10,18 @@ pub enum AccessMode {
     Buffer,
 }
 
+impl AccessMode {
+    pub fn size(&self) -> Option<usize> {
+        match self {
+            Self::Byte => Some(1),
+            Self::Word => Some(2),
+            Self::Dword => Some(4),
+            Self::Qword => Some(8),
+            _ => None,
+        }
+    }
+}
+
 fn maybe_hex<T: Num + sign::Unsigned>(s: &str) -> Result<T, String>
 where
     <T as num_traits::Num>::FromStrRadixErr: std::fmt::Display,

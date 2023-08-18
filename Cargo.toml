@@ -10,4 +10,5 @@ path = "src/lib.rs"
 
 [dependencies]
 clap = { version = "4.3.21", features = ["derive"] }
+nix = { version = "0.26.2", features = ["ioctl"] }
 num-traits = "0.2.16"

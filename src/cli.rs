@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum};
+use clap::{Parser, ValueEnum, Args, Subcommand};
 use num_traits::{sign, Num};
 
 #[derive(ValueEnum, Clone, Debug, Copy)]
@@ -41,6 +41,18 @@ where
     }
 }
 
+#[derive(Subcommand, Debug)]
+pub enum Subcommands {
+    /// Load the linpmem driver
+    Insmod(InsmodCli),
+}
+
+#[derive(Args, Debug)]
+pub struct InsmodCli {
+    /// Path to the linpmem.ko object file
+    pub kmod_path: String,
+}
+
 #[derive(Parser, Debug)]
 /// Command line client for the pmem driver.
 ///
@@ -48,6 +60,9 @@ where
 /// the features of the pmem driver in scripts and on the command line.
 #[command(author, version)]
 pub struct Cli {
+    #[command(subcommand)]
+    pub subcommand: Option<Subcommands>,
+
     /// Address for physical read/write operations
     #[arg(short, long, value_parser=maybe_hex::<u64>, requires("mode"))]
     pub address: Option<u64>,

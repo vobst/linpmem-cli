@@ -3,12 +3,15 @@ use std::error::Error;
 mod cli;
 mod ioctl;
 mod insmod;
+mod utils;
 
 pub use crate::cli::Cli;
 use crate::cli::Subcommands;
 use crate::ioctl::{Driver, IOCtlCmd};
 
 pub fn run(cli: &Cli) -> Result<(), Box<dyn Error>> {
+    utils::check_root()?;
+
     if let Some(subcommand) = &cli.subcommand {
         return match subcommand {
             Subcommands::Insmod(insmod_cli) => insmod::run(insmod_cli),

@@ -12,15 +12,20 @@ struct LoadContext {
 mod kallsyms {
     use std::error::Error;
     use std::fs;
-    use std::io::{self, BufRead};
-
-    struct Env {
-        restrict: bool,
-        procfs: bool,
-        kprobes: bool,
-    }
+    use std::io::{self, BufRead, Read, Seek, Write};
 
     pub fn lookup(name: &str) -> Result<u64, Box<dyn Error>> {
+        let mut kptr_restrict = fs::File::options()
+            .read(true)
+            .write(true)
+            .open("/proc/sys/kernel/kptr_restrict")?;
+        let mut old = [0; 1];
+        kptr_restrict.read(&mut old)?;
+        if old[0] == b'2' {
+            kptr_restrict.seek(io::SeekFrom::Start(0))?;
+            kptr_restrict.write(&[b'1'])?;
+        }
+
         let file = fs::File::open("/proc/kallsyms")?;
         let matches: Vec<String> = io::BufReader::new(file)
             .lines()
@@ -33,6 +38,11 @@ mod kallsyms {
             })
             .map(|line| line.unwrap())
             .collect();
+
+        if old[0] == b'2' {
+            kptr_restrict.seek(io::SeekFrom::Start(0))?;
+            kptr_restrict.write(&old)?;
+        }
 
         if matches.len() != 1 {
             return Err(format!(
@@ -47,7 +57,7 @@ mod kallsyms {
             u64::from_str_radix(matches[0].split(" ").next().unwrap(), 16)?;
 
         if address == 0 {
-            Err("kallsyms_restrict == 2".into())
+            Err(format!("Address of {} in kallsyms is zero", name).into())
         } else {
             Ok(address)
         }
@@ -71,9 +81,12 @@ impl LoadContext {
                 kallsyms_lookup_name
             ))?);
         }
-        println!("{}", res.unwrap_err());
+        println!(
+            "User space kallsyms -> kallsyms_lookup_name failed: {}",
+            res.unwrap_err()
+        );
 
-        Err("Unable to obtain the address of kallsyms_lookup_name".into())
+        Err("Unable to build module parameters".into())
     }
 
     fn load(&self) -> Result<(), nix::errno::Errno> {

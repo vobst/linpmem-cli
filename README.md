@@ -12,7 +12,7 @@ cd linpmem-cli
 ```
 
 ### Step 2 (optional)
-If you have not done so already, start by installing the Rust programming language on your system. Instructions can be found [here](https://www.rust-lang.org/tools/install)].
+If you have not done so already, start by installing the Rust programming language on your system. Instructions can be found [here](https://www.rust-lang.org/tools/install).
 
 In case you already use Rust via Rustup, great, but make sure your installation is up-to-date by running
 ```

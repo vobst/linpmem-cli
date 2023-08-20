@@ -135,7 +135,7 @@ impl IOCtlCmd {
         if let Some(virt_address) = cli.virt_address {
             return Ok(Self::VtoP(virt_address, cli.pid));
         }
-        if let Some(hex_string) = cli.write.clone() {
+        if let Some(_hex_string) = cli.write.clone() {
             return Ok(Self::WritePhys(
                 cli.address.unwrap(), // ok as Clap enforces them if write
                 cli.mode.unwrap(),    // is given
@@ -184,9 +184,9 @@ impl Driver {
 
     pub fn write_phys(
         &self,
-        address: u64,
-        mode: AccessMode,
-        data: Vec<u8>,
+        _address: u64,
+        _mode: AccessMode,
+        _data: Vec<u8>,
     ) -> Result<(), &'static str> {
         Err("Writing of physical memory is not implemented")
     }
@@ -199,7 +199,7 @@ impl Driver {
     ) -> Result<(), Box<dyn Error>> {
         let mem = ffi::read_phys(self.handle.as_raw_fd(), address, mode, size)?;
 
-        io::stdout().write(mem.as_slice())?;
+        io::stdout().write_all(mem.as_slice())?;
 
         Ok(())
     }

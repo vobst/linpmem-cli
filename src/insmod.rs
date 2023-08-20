@@ -20,10 +20,10 @@ mod kallsyms {
             .write(true)
             .open("/proc/sys/kernel/kptr_restrict")?;
         let mut old = [0; 1];
-        kptr_restrict.read(&mut old)?;
+        kptr_restrict.read_exact(&mut old)?;
         if old[0] == b'2' {
             kptr_restrict.seek(io::SeekFrom::Start(0))?;
-            kptr_restrict.write(&[b'1'])?;
+            kptr_restrict.write_all(&[b'1'])?;
         }
 
         let file = fs::File::open("/proc/kallsyms")?;
@@ -41,7 +41,7 @@ mod kallsyms {
 
         if old[0] == b'2' {
             kptr_restrict.seek(io::SeekFrom::Start(0))?;
-            kptr_restrict.write(&old)?;
+            kptr_restrict.write_all(&old)?;
         }
 
         if matches.len() != 1 {
@@ -54,7 +54,7 @@ mod kallsyms {
         }
 
         let address: u64 =
-            u64::from_str_radix(matches[0].split(" ").next().unwrap(), 16)?;
+            u64::from_str_radix(matches[0].split(' ').next().unwrap(), 16)?;
 
         if address == 0 {
             Err(format!("Address of {} in kallsyms is zero", name).into())
@@ -101,7 +101,7 @@ impl LoadContext {
 }
 
 pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
-    let ctx = LoadContext::build(&cli)?;
+    let ctx = LoadContext::build(cli)?;
 
     ctx.load()?;
 

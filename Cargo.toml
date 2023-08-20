@@ -1,7 +1,14 @@
 [package]
 name = "pmem"
 version = "0.1.0"
+authors = ["Valentin Obst"]
 edition = "2021"
+description = "Command line application for loading and using the linpmem driver."
+readme = "README.md"
+repository = "https://github.com/vobst/linpmem-cli"
+license = "MIT"
+keywords = ["linpmem", "forensics", "physical memory", "memory acquisition"]
+categories = ["command-line-utilities", "hardware-support", "os::linux-apis"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -10,5 +17,5 @@ path = "src/lib.rs"
 
 [dependencies]
 clap = { version = "4.3.21", features = ["derive"] }
-nix = { version = "0.26.2", features = ["ioctl"] }
+nix = { version = "0.26.2", features = ["ioctl", "kmod"] }
 num-traits = "0.2.16"

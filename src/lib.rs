@@ -1,3 +1,6 @@
+/* SPDX-FileCopyrightText: © 2023 Valentin Obst <legal@bpfvol3.de>
+ * SPDX-License-Identifier: MIT
+ */
 use std::error::Error;
 
 mod cli;

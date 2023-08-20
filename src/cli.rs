@@ -54,10 +54,10 @@ pub struct InsmodCli {
 }
 
 #[derive(Parser, Debug)]
-/// Command line client for the pmem driver.
+/// Command line client for the linpmem driver.
 ///
-/// Small tool for interacting with the pmem driver. This program lets you use
-/// the features of the pmem driver in scripts and on the command line.
+/// Small tool for loading and interacting with the linpmem driver. It lets you
+/// use the features of the driver in scripts and on the command line.
 #[command(author, version)]
 pub struct Cli {
     #[command(subcommand)]

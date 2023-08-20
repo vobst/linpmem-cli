@@ -4,8 +4,8 @@
 use std::error::Error;
 
 mod cli;
-mod ioctl;
 mod insmod;
+mod ioctl;
 mod utils;
 
 pub use crate::cli::Cli;

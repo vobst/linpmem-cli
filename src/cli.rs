@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum, Args, Subcommand};
+use clap::{Args, Parser, Subcommand, ValueEnum};
 use num_traits::{sign, Num};
 
 #[derive(ValueEnum, Clone, Debug, Copy)]
@@ -76,13 +76,7 @@ pub struct Cli {
     pub size: Option<u64>,
 
     /// Access mode for read and write operations
-    #[arg(
-        value_enum,
-        short,
-        long,
-        rename_all = "lower",
-        requires("address")
-    )]
+    #[arg(value_enum, short, long, rename_all = "lower", requires("address"))]
     pub mode: Option<AccessMode>,
 
     /// Write the hex-encoded byte sequence

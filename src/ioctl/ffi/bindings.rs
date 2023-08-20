@@ -334,9 +334,7 @@ fn bindgen_test_layout___fsid_t() {
         concat!("Alignment of ", stringify!(__fsid_t))
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).__val) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).__val) as usize - ptr as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -416,9 +414,7 @@ fn bindgen_test_layout_winsize() {
         concat!("Alignment of ", stringify!(winsize))
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).ws_row) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).ws_row) as usize - ptr as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -428,9 +424,7 @@ fn bindgen_test_layout_winsize() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).ws_col) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).ws_col) as usize - ptr as usize },
         2usize,
         concat!(
             "Offset of field: ",
@@ -441,8 +435,7 @@ fn bindgen_test_layout_winsize() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).ws_xpixel) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).ws_xpixel) as usize - ptr as usize
         },
         4usize,
         concat!(
@@ -454,8 +447,7 @@ fn bindgen_test_layout_winsize() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).ws_ypixel) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).ws_ypixel) as usize - ptr as usize
         },
         6usize,
         concat!(
@@ -492,9 +484,7 @@ fn bindgen_test_layout_termio() {
         concat!("Alignment of ", stringify!(termio))
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_iflag) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_iflag) as usize - ptr as usize },
         0usize,
         concat!(
             "Offset of field: ",
@@ -504,9 +494,7 @@ fn bindgen_test_layout_termio() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_oflag) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_oflag) as usize - ptr as usize },
         2usize,
         concat!(
             "Offset of field: ",
@@ -516,9 +504,7 @@ fn bindgen_test_layout_termio() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_cflag) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_cflag) as usize - ptr as usize },
         4usize,
         concat!(
             "Offset of field: ",
@@ -528,9 +514,7 @@ fn bindgen_test_layout_termio() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_lflag) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_lflag) as usize - ptr as usize },
         6usize,
         concat!(
             "Offset of field: ",
@@ -540,9 +524,7 @@ fn bindgen_test_layout_termio() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_line) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_line) as usize - ptr as usize },
         8usize,
         concat!(
             "Offset of field: ",
@@ -552,9 +534,7 @@ fn bindgen_test_layout_termio() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).c_cc) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).c_cc) as usize - ptr as usize },
         9usize,
         concat!(
             "Offset of field: ",
@@ -607,8 +587,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).phys_address) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).phys_address) as usize - ptr as usize
         },
         0usize,
         concat!(
@@ -620,8 +599,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).out_value) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).out_value) as usize - ptr as usize
         },
         8usize,
         concat!(
@@ -633,8 +611,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).readbuffer) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).readbuffer) as usize - ptr as usize
         },
         16usize,
         concat!(
@@ -646,8 +623,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).readbuffer_size) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).readbuffer_size) as usize - ptr as usize
         },
         24usize,
         concat!(
@@ -659,8 +635,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).access_type) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).access_type) as usize - ptr as usize
         },
         32usize,
         concat!(
@@ -672,8 +647,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).write_access) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).write_access) as usize - ptr as usize
         },
         33usize,
         concat!(
@@ -685,8 +659,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).reserved1) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).reserved1) as usize - ptr as usize
         },
         34usize,
         concat!(
@@ -698,8 +671,7 @@ fn bindgen_test_layout__LINPMEM_DATA_TRANSFER() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).reserved2) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).reserved2) as usize - ptr as usize
         },
         35usize,
         concat!(
@@ -737,8 +709,7 @@ fn bindgen_test_layout__LINPMEM_VTOP_INFO() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).virt_address) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).virt_address) as usize - ptr as usize
         },
         0usize,
         concat!(
@@ -750,8 +721,7 @@ fn bindgen_test_layout__LINPMEM_VTOP_INFO() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).associated_cr3) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).associated_cr3) as usize - ptr as usize
         },
         8usize,
         concat!(
@@ -763,8 +733,7 @@ fn bindgen_test_layout__LINPMEM_VTOP_INFO() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).phys_address) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).phys_address) as usize - ptr as usize
         },
         16usize,
         concat!(
@@ -775,9 +744,7 @@ fn bindgen_test_layout__LINPMEM_VTOP_INFO() {
         )
     );
     assert_eq!(
-        unsafe {
-            ::std::ptr::addr_of!((*ptr).ppte) as usize - ptr as usize
-        },
+        unsafe { ::std::ptr::addr_of!((*ptr).ppte) as usize - ptr as usize },
         24usize,
         concat!(
             "Offset of field: ",
@@ -812,8 +779,7 @@ fn bindgen_test_layout__LINPMEM_CR3_INFO() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).target_process) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).target_process) as usize - ptr as usize
         },
         0usize,
         concat!(
@@ -825,8 +791,7 @@ fn bindgen_test_layout__LINPMEM_CR3_INFO() {
     );
     assert_eq!(
         unsafe {
-            ::std::ptr::addr_of!((*ptr).result_cr3) as usize
-                - ptr as usize
+            ::std::ptr::addr_of!((*ptr).result_cr3) as usize - ptr as usize
         },
         8usize,
         concat!(

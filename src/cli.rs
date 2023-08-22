@@ -54,7 +54,7 @@ pub struct InsmodCli {
 }
 
 #[derive(Parser, Debug)]
-/// Command line client for the linpmem driver.
+/// Command-line client for the linpmem driver.
 ///
 /// Small tool for loading and interacting with the linpmem driver. It lets you
 /// use the features of the driver in scripts and on the command line.

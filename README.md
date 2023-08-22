@@ -1,6 +1,6 @@
 # pmem
 
-`pmem` is a small tool for loading and interacting with the [linpmem driver](). It lets you use the features of the driver in scripts and on the command line. At the same time, this repository also provides a library that can be used by other programs that want to interface with the driver. The command line application is simply a small wrapper around this library.
+`pmem` is a small tool for loading and interacting with the [linpmem driver](). It lets you use the features of the driver in scripts and on the command line. At the same time, this repository also provides a library that can be used by other programs that want to interface with the driver. The command-line application is simply a thin wrapper around this library.
 
 ## Building
 
@@ -47,7 +47,7 @@ rm -rf path/to/linpmem-cli
 
 ## Usage
 
-`pmem` is a command line client for the `linpmem` driver. Thus, you first have to [build the driver](). Assuming that you managed to successfully build the driver, load it with the `insmod` subcommand:
+`pmem` is a command-line client for the `linpmem` driver. Thus, you first have to [build the driver](). Assuming that you managed to successfully build the driver, load it with the `insmod` subcommand:
 ```
 pmem insmod path/to/linpmem.ko
 ```
@@ -56,7 +56,7 @@ _Note: We are using a custom module loader, thus the system's `insmod` or `modpr
 Now, you can use `pmem` to interact with the driver:
 ```
 $ pmem --help
-Command line client for the linpmem driver.
+Command-line client for the linpmem driver.
 
 Small tool for loading and interacting with the linpmem driver. It lets you use the features of the driver in scripts and on the command line.
 
@@ -96,7 +96,7 @@ Options:
   -V, --version
           Print version
 ```
-By default, memory contents are written to stdout as raw bytes, thus, you might want to use `xxd` to make them more human-friendly:
+By default, memory contents are written to stdout as raw bytes. Thus, you might want to use `xxd` to make them more human-friendly:
 ```
 $ pmem --address 0x1ffe0040 -m buffer -s 16 | xxd
 00000000: 4453 4454 7818 0000 0170 424f 4348 5320  DSDTx....pBOCHS
@@ -104,7 +104,7 @@ $ pmem --address 0x1ffe0040 -m buffer -s 16 | xxd
 
 ## Troubleshooting
 
-At this point, a word of caution may be in order. Reading and writing arbitrary physical memory is dangerous. If you do not know what you are doing, DO NOT USE THIS TOOL.
+At this point, a word of caution may be in order. Reading and writing arbitrary physical memory is considered dangerous. If you do not know what you are doing, DO NOT USE THIS TOOL.
 
 For all the others, a good point to start may be the driver logs, simply:
 ```

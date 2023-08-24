@@ -18,6 +18,10 @@ In case you already use Rust via Rustup, great, but make sure your installation 
 ```
 rustup update
 ```
+You will also need the `x86_64-unknown-linux-musl` target. It can be installed by running:
+```
+rustup target add x86_64-unknown-linux-musl
+```
 
 ### Step 3
 Building `pmem` using Cargo is easy because the process is the same as for every other Rust program:

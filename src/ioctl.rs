@@ -1,5 +1,6 @@
 use crate::cli::AccessMode;
 use crate::cli::Cli;
+use crate::insmod::LoadContext;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, Write};
@@ -156,7 +157,7 @@ pub struct Driver {
 
 impl Driver {
     pub fn build() -> io::Result<Self> {
-        let handle = File::open("/dev/linpmem")?;
+        let handle = File::open(LoadContext::DEV_PATH)?;
 
         Ok(Self { handle })
     }

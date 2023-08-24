@@ -1,12 +1,15 @@
 use crate::cli::InsmodCli;
+use crate::utils;
+use nix::sys::stat;
 use nix::{self, kmod};
 use std::error::Error;
 use std::ffi::CString;
 use std::fs;
 
-struct LoadContext {
+pub struct LoadContext {
     object: fs::File,
     param: CString,
+    major: u32,
 }
 
 mod kallsyms {
@@ -65,20 +68,29 @@ mod kallsyms {
 }
 
 impl LoadContext {
+    pub const DEV_PATH: &str = "/dev/linpmem";
+
     fn build(cli: &InsmodCli) -> Result<Self, Box<dyn Error>> {
+        let major = Self::find_unused_major()?;
         Ok(LoadContext {
             object: fs::File::open(&cli.kmod_path)?,
-            param: Self::build_param()?,
+            param: Self::build_param(major)?,
+            major,
         })
     }
 
-    fn build_param() -> Result<CString, Box<dyn Error>> {
+    // Todo: iterate /dev and find a chrdev major that is unused
+    fn find_unused_major() -> Result<u32, Box<dyn Error>> {
+        Ok(42)
+    }
+
+    fn build_param(major: u32) -> Result<CString, Box<dyn Error>> {
         let res = kallsyms::lookup("kallsyms_lookup_name");
 
         if let Ok(kallsyms_lookup_name) = res {
             return Ok(CString::new(format!(
-                "kallsyms_lookup_name={}",
-                kallsyms_lookup_name
+                "kallsyms_lookup_name={} major={}",
+                kallsyms_lookup_name, major
             ))?);
         }
         println!(
@@ -98,12 +110,32 @@ impl LoadContext {
 
         Ok(())
     }
+
+    fn mknod(&self) -> Result<(), nix::errno::Errno> {
+        stat::mknod(
+            Self::DEV_PATH,
+            stat::SFlag::S_IFCHR,
+            stat::Mode::S_IRUSR | stat::Mode::S_IRGRP | stat::Mode::S_IROTH,
+            stat::makedev(self.major as u64, 0),
+        )
+    }
 }
 
 pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
+    utils::check_root()?;
+
     let ctx = LoadContext::build(cli)?;
 
     ctx.load()?;
 
-    Ok(())
+    match ctx.mknod() {
+        Ok(()) => Ok(()),
+        Err(e) => match e {
+            nix::errno::Errno::EEXIST => {
+                println!("Reusing existing device file {}", LoadContext::DEV_PATH);
+                Ok(())
+            },
+            _ => Err(Box::new(e)),
+        }
+    }
 }

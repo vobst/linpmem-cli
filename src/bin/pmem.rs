@@ -1,6 +1,7 @@
-/* SPDX-FileCopyrightText: © 2023 Valentin Obst <legal@bpfvol3.de>
+/* SPDX-FileCopyrightText: © 2023 Valentin Obst <legal@eb9f.de>
  * SPDX-License-Identifier: MIT
  */
+
 use clap::Parser;
 use pmem::Cli;
 use std::process;

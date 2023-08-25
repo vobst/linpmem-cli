@@ -4,11 +4,11 @@
 use std::error::Error;
 
 mod cli;
-mod insmod;
+pub mod insmod;
 mod ioctl;
 mod utils;
 
-pub use crate::cli::Cli;
+pub use crate::cli::{Cli, LoaderCli};
 use crate::cli::Subcommands;
 use crate::ioctl::{Driver, IOCtlCmd};
 

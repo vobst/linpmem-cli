@@ -54,6 +54,18 @@ pub struct InsmodCli {
 }
 
 #[derive(Parser, Debug)]
+/// Stand-alone loader for the linpmem driver.
+///
+/// This program contains only the functionality needed to load the driver.
+/// It is essentially equivalent to the `insmod` subcommand of the `pmem`
+/// binary.
+#[command(author, version)]
+pub struct LoaderCli {
+    #[command(flatten)]
+    pub args: InsmodCli,
+}
+
+#[derive(Parser, Debug)]
 /// Command-line client for the linpmem driver.
 ///
 /// Small tool for loading and interacting with the linpmem driver. It lets you

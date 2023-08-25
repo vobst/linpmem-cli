@@ -15,6 +15,14 @@ categories = ["command-line-utilities", "hardware-support", "os::linux-apis"]
 name = "pmem"
 path = "src/lib.rs"
 
+[[bin]]
+name = "pmem"
+path = "src/bin/pmem.rs"
+
+[[bin]]
+name = "loader"
+path = "src/bin/loader.rs"
+
 [dependencies]
 clap = { version = "4.3.21", features = ["derive"] }
 nix = { version = "0.26.2", features = ["ioctl", "kmod"] }

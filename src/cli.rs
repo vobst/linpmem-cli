@@ -50,7 +50,11 @@ pub enum Subcommands {
 #[derive(Args, Debug)]
 pub struct InsmodCli {
     /// Path to the linpmem.ko object file
-    pub kmod_path: String,
+    pub kmod_path: Option<String>,
+
+    /// Unload the driver and remove its device file
+    #[arg(short, long, default_value_t=false)]
+    pub rm: bool,
 }
 
 #[derive(Parser, Debug)]

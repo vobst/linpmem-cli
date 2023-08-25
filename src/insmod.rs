@@ -1,7 +1,7 @@
 use crate::cli::InsmodCli;
 use crate::utils;
 use nix::sys::stat;
-use nix::{self, kmod};
+use nix::{self, kmod, unistd};
 use std::error::Error;
 use std::ffi::CString;
 use std::fs;
@@ -69,11 +69,16 @@ mod kallsyms {
 
 impl LoadContext {
     pub const DEV_PATH: &str = "/dev/linpmem";
+    pub const DRV_NAME: &str = "linpmem";
 
     fn build(cli: &InsmodCli) -> Result<Self, Box<dyn Error>> {
         let major = Self::find_unused_major()?;
         Ok(LoadContext {
-            object: fs::File::open(&cli.kmod_path)?,
+            object: fs::File::open(
+                cli.kmod_path
+                    .as_ref()
+                    .ok_or("Please specify a path to the driver object")?,
+            )?,
             param: Self::build_param(major)?,
             major,
         })
@@ -111,6 +116,15 @@ impl LoadContext {
         Ok(())
     }
 
+    fn unload() -> Result<(), nix::errno::Errno> {
+        kmod::delete_module(
+            &CString::new(Self::DRV_NAME).expect("BUG"),
+            kmod::DeleteModuleFlags::O_NONBLOCK,
+        )?;
+        unistd::unlink(Self::DEV_PATH)?;
+        Ok(())
+    }
+
     fn mknod(&self) -> Result<(), nix::errno::Errno> {
         stat::mknod(
             Self::DEV_PATH,
@@ -124,6 +138,10 @@ impl LoadContext {
 pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
     utils::check_root()?;
 
+    if cli.rm {
+        return Ok(LoadContext::unload()?);
+    }
+
     let ctx = LoadContext::build(cli)?;
 
     ctx.load()?;
@@ -132,10 +150,13 @@ pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
         Ok(()) => Ok(()),
         Err(e) => match e {
             nix::errno::Errno::EEXIST => {
-                println!("Reusing existing device file {}", LoadContext::DEV_PATH);
+                println!(
+                    "Reusing existing device file {}",
+                    LoadContext::DEV_PATH
+                );
                 Ok(())
-            },
+            }
             _ => Err(Box::new(e)),
-        }
+        },
     }
 }

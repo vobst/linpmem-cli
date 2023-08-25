@@ -28,7 +28,9 @@ Building `pmem` using Cargo is easy because the process is the same as for every
 ```
 cargo build --release
 ```
-This will generate a static binary located at `target/x86_64-unknown-linux-musl/release/pmem`.
+This will generate two static binaries located at `target/x86_64-unknown-linux-musl/release/`:
+- `pmem`: The fully-featured command-line client.
+- `loader`: A smaller program that is containing only the module loader and unloader.
 
 ## Installation
 
@@ -36,7 +38,9 @@ Likewise, installing can simply be done using:
 ```
 cargo install --path . --locked
 ```
-This command will install the `pmem` binary into Cargo's bin folder, e.g., `$HOME/.cargo/bin`.
+This command will install the `pmem` and `loader` binaries into Cargo's bin folder, e.g., `$HOME/.cargo/bin`.
+
+Note: This will install the programs for the _current_ user, which is hopefully not the root user. In case you experience any troubles when running them through sudo or in a root shell, remember to add the binaries to root's PATH.
 
 ## Uninstall
 
@@ -105,6 +109,12 @@ By default, memory contents are written to stdout as raw bytes. Thus, you might 
 $ pmem --address 0x1ffe0040 -m buffer -s 16 | xxd
 00000000: 4453 4454 7818 0000 0170 424f 4348 5320  DSDTx....pBOCHS
 ```
+
+## Library
+You can also use this project as a library to integrate the linpmem driver into your own applications. Currently we offer a public interface to Rust and C/C++. We might also offer a Python interface in the future (let me know if you are interested).
+
+### C/C++
+The normal build process also generates a static C library `libpmem.a` as well as a header files `libpmem.h[pp]` in `target/x86_64-unknown-linux-musl/release/`. Consult the header files for documentation of the libraries public C/C++ API. You can find example C programs in `examples/c`. To build the examples, simply type `make` when inside this directory.
 
 ## Troubleshooting
 

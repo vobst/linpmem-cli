@@ -7,6 +7,7 @@ use std::io::{self, Write};
 use std::os::fd::AsRawFd;
 
 mod ffi {
+    /// cbindgen:ignore
     #[allow(non_upper_case_globals, unused, non_camel_case_types)]
     mod bindings;
 

@@ -9,11 +9,12 @@ repository = "https://github.com/vobst/linpmem-cli"
 license = "MIT"
 keywords = ["linpmem", "forensics", "physical memory", "memory acquisition"]
 categories = ["command-line-utilities", "hardware-support", "os::linux-apis"]
+build = "build.rs"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pmem"
 path = "src/lib.rs"
+crate-type = ["lib", "staticlib"]
 
 [[bin]]
 name = "pmem"
@@ -23,7 +24,13 @@ path = "src/bin/pmem.rs"
 name = "loader"
 path = "src/bin/loader.rs"
 
+[profile.release]
+strip = "symbols"
+
 [dependencies]
 clap = { version = "4.3.21", features = ["derive"] }
 nix = { version = "0.26.2", features = ["ioctl", "kmod"] }
 num-traits = "0.2.16"
+
+[build-dependencies]
+cbindgen = "0.25.0"

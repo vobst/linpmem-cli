@@ -6,12 +6,6 @@ use std::error::Error;
 use std::ffi::CString;
 use std::fs;
 
-pub struct LoadContext {
-    object: fs::File,
-    param: CString,
-    major: u32,
-}
-
 mod kallsyms {
     use std::error::Error;
     use std::fs;
@@ -67,11 +61,17 @@ mod kallsyms {
     }
 }
 
+pub struct LoadContext {
+    object: fs::File,
+    param: CString,
+    major: u32,
+}
+
 impl LoadContext {
     pub const DEV_PATH: &str = "/dev/linpmem";
     pub const DRV_NAME: &str = "linpmem";
 
-    fn build(cli: &InsmodCli) -> Result<Self, Box<dyn Error>> {
+    fn from_cli(cli: &InsmodCli) -> Result<Self, Box<dyn Error>> {
         let major = Self::find_unused_major()?;
         Ok(LoadContext {
             object: fs::File::open(
@@ -79,6 +79,15 @@ impl LoadContext {
                     .as_ref()
                     .ok_or("Please specify a path to the driver object")?,
             )?,
+            param: Self::build_param(major)?,
+            major,
+        })
+    }
+
+    fn build(path: &str) -> Result<Self, Box<dyn Error>> {
+        let major = Self::find_unused_major()?;
+        Ok(LoadContext {
+            object: fs::File::open(path)?,
             param: Self::build_param(major)?,
             major,
         })
@@ -135,6 +144,57 @@ impl LoadContext {
     }
 }
 
+pub mod ffi {
+    use super::LoadContext;
+    use nix::errno::Errno;
+    use std::ffi;
+
+    #[no_mangle]
+    /// pmem_load - load the linpmem driver
+    /// @path: pointer to a string with the path to the driver object
+    ///
+    /// This must be called to load the linpmem driver prior to using it.
+    ///
+    /// Returns zero on success, or -EXXX on failure
+    pub extern "C" fn pmem_load(path: *const ffi::c_char) -> i32 {
+        if path.is_null() {
+            return -1;
+        }
+
+        let path = unsafe { ffi::CStr::from_ptr(path) }.to_str();
+        let Ok(path) = path else { return -1; };
+        let ctx = LoadContext::build(path);
+        let Ok(ctx) = ctx else { return -1; };
+
+        let mut res = ctx.load();
+        if let Err(errno) = res {
+            return errno as i32;
+        }
+
+        res = ctx.mknod();
+        if let Err(errno) = res {
+            if errno != Errno::EEXIST {
+                return errno as i32;
+            }
+        }
+
+        0
+    }
+
+    #[no_mangle]
+    /// pmem_unload - unload the linpmem driver
+    ///
+    /// This can be called to unload the linpmem driver after using it.
+    ///
+    /// Returns zero on success, or -EXXX on failure
+    pub extern "C" fn pmem_unload() -> i32 {
+        match LoadContext::unload() {
+            Err(errno) => return errno as i32,
+            Ok(()) => 0,
+        }
+    }
+}
+
 pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
     utils::check_root()?;
 
@@ -142,7 +202,7 @@ pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
         return Ok(LoadContext::unload()?);
     }
 
-    let ctx = LoadContext::build(cli)?;
+    let ctx = LoadContext::from_cli(cli)?;
 
     ctx.load()?;
 

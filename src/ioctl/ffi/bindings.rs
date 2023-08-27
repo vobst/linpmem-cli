@@ -544,13 +544,6 @@ fn bindgen_test_layout_termio() {
         )
     );
 }
-extern "C" {
-    pub fn ioctl(
-        __fd: ::std::os::raw::c_int,
-        __request: ::std::os::raw::c_ulong,
-        ...
-    ) -> ::std::os::raw::c_int;
-}
 pub const _PHYS_ACCESS_MODE_PHYS_BYTE_READ: _PHYS_ACCESS_MODE = 1;
 pub const _PHYS_ACCESS_MODE_PHYS_WORD_READ: _PHYS_ACCESS_MODE = 2;
 pub const _PHYS_ACCESS_MODE_PHYS_DWORD_READ: _PHYS_ACCESS_MODE = 4;

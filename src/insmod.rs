@@ -147,7 +147,7 @@ impl LoadContext {
 pub mod ffi {
     use super::LoadContext;
     use nix::errno::Errno;
-    use std::ffi;
+    use std::ffi::{CStr,  c_char, c_int};
 
     #[no_mangle]
     /// pmem_load - load the linpmem driver
@@ -156,25 +156,25 @@ pub mod ffi {
     /// This must be called to load the linpmem driver prior to using it.
     ///
     /// Returns zero on success, or -EXXX on failure
-    pub extern "C" fn pmem_load(path: *const ffi::c_char) -> i32 {
+    pub extern "C" fn pmem_load(path: *const c_char) -> c_int {
         if path.is_null() {
             return -1;
         }
 
-        let path = unsafe { ffi::CStr::from_ptr(path) }.to_str();
+        let path = unsafe { CStr::from_ptr(path) }.to_str();
         let Ok(path) = path else { return -1; };
         let ctx = LoadContext::build(path);
         let Ok(ctx) = ctx else { return -1; };
 
         let mut res = ctx.load();
         if let Err(errno) = res {
-            return errno as i32;
+            return errno as c_int;
         }
 
         res = ctx.mknod();
         if let Err(errno) = res {
             if errno != Errno::EEXIST {
-                return errno as i32;
+                return errno as c_int;
             }
         }
 
@@ -187,9 +187,9 @@ pub mod ffi {
     /// This can be called to unload the linpmem driver after using it.
     ///
     /// Returns zero on success, or -EXXX on failure
-    pub extern "C" fn pmem_unload() -> i32 {
+    pub extern "C" fn pmem_unload() -> c_int {
         match LoadContext::unload() {
-            Err(errno) => return errno as i32,
+            Err(errno) => return errno as c_int,
             Ok(()) => 0,
         }
     }

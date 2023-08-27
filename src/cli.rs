@@ -55,6 +55,14 @@ pub struct InsmodCli {
     /// Unload the driver and remove its device file
     #[arg(short, long, default_value_t=false)]
     pub rm: bool,
+
+    /// Adjust the driver to the running kernel before loading
+    #[arg(short, long, default_value_t=false)]
+    pub adjust: bool,
+
+    /// Path to a valid driver for the running kernel
+    #[arg(long)]
+    pub valid_driver: Option<String>,
 }
 
 #[derive(Parser, Debug)]

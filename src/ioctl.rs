@@ -1,6 +1,6 @@
 use crate::cli::AccessMode;
 use crate::cli::Cli;
-use crate::insmod::LoadContext;
+use crate::insmod::InsmodContext;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, Write};
@@ -158,7 +158,7 @@ pub struct Driver {
 
 impl Driver {
     pub fn build() -> io::Result<Self> {
-        let handle = File::open(LoadContext::DEV_PATH)?;
+        let handle = File::open(InsmodContext::DEV_PATH)?;
 
         Ok(Self { handle })
     }

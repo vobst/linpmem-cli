@@ -1,16 +1,19 @@
 use crate::cli::InsmodCli;
 use crate::utils;
 use nix::sys::stat;
-use nix::{self, kmod, unistd};
+use nix::{self, errno, kmod, unistd};
 use std::error::Error;
 use std::ffi::CString;
 use std::fs;
+
+mod loader;
 
 mod kallsyms {
     use std::error::Error;
     use std::fs;
     use std::io::{self, BufRead, Read, Seek, Write};
 
+    /// Do a lookup of a name in /proc/kallsyms
     pub fn lookup(name: &str) -> Result<u64, Box<dyn Error>> {
         let mut kptr_restrict = fs::File::options()
             .read(true)
@@ -61,33 +64,51 @@ mod kallsyms {
     }
 }
 
-pub struct LoadContext {
-    object: fs::File,
+#[derive(Debug)]
+/// Builder object that is used to perform customized module loading
+pub struct InsmodContext {
+    adjust: bool,
+    module: fs::File,
+    adjusted_module: Option<Vec<u8>>, // set iff adjust == true
+    valid_module: Option<Vec<u8>>,    // set iff adjust == true
     param: CString,
     major: u32,
 }
 
-impl LoadContext {
+impl InsmodContext {
     pub const DEV_PATH: &str = "/dev/linpmem";
     pub const DRV_NAME: &str = "linpmem";
 
     fn from_cli(cli: &InsmodCli) -> Result<Self, Box<dyn Error>> {
-        let major = Self::find_unused_major()?;
-        Ok(LoadContext {
-            object: fs::File::open(
-                cli.kmod_path
-                    .as_ref()
-                    .ok_or("Please specify a path to the driver object")?,
-            )?,
-            param: Self::build_param(major)?,
-            major,
-        })
+        Self::build(
+            cli.adjust,
+            cli.kmod_path
+                .as_ref()
+                .ok_or("Please specify a path to the driver object")?,
+            cli.valid_driver.as_ref(),
+        )
     }
 
-    fn build(path: &str) -> Result<Self, Box<dyn Error>> {
+    /// Create an InsmodContext instance that can be used to load the module
+    pub fn build(
+        adjust: bool,
+        module: &str,
+        valid_module: Option<&String>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let valid_module = if adjust {
+            Some(loader::mod_to_vec_decompress(match valid_module {
+                Some(path) => fs::File::open(path)?,
+                None => loader::find_valid_module()?,
+            })?)
+        } else {
+            None
+        };
         let major = Self::find_unused_major()?;
-        Ok(LoadContext {
-            object: fs::File::open(path)?,
+        Ok(InsmodContext {
+            adjust,
+            module: fs::File::open(module)?,
+            adjusted_module: None,
+            valid_module,
             param: Self::build_param(major)?,
             major,
         })
@@ -115,39 +136,75 @@ impl LoadContext {
         Err("Unable to build module parameters".into())
     }
 
-    fn load(&self) -> Result<(), nix::errno::Errno> {
-        kmod::finit_module(
-            &self.object,
-            self.param.as_c_str(),
-            kmod::ModuleInitFlags::empty(),
-        )?;
-
-        Ok(())
+    /// Adjusts the module to the running kernel
+    pub fn adjust(self) -> Result<Self, Box<dyn Error>> {
+        Ok(Self {
+            adjusted_module: Some(loader::adjust_module(
+                &self.module,
+                self.valid_module
+                    .as_ref()
+                    .ok_or("Internal error: valid_module was None")?,
+            )?),
+            ..self
+        })
     }
 
-    fn unload() -> Result<(), nix::errno::Errno> {
+    /// Load the module
+    ///
+    /// Either loads the unmodified module from directly a file or loads the
+    /// adjusted module from a buffer.
+    pub fn load(self) -> Result<Self, nix::errno::Errno> {
+        if self.adjust {
+            kmod::init_module(
+                self.adjusted_module
+                    .as_ref()
+                    .expect("BUG: adjusted_module was None"),
+                self.param.as_c_str(),
+            )?;
+        } else {
+            kmod::finit_module(
+                &self.module,
+                self.param.as_c_str(),
+                kmod::ModuleInitFlags::empty(),
+            )?;
+        }
+
+        Ok(self)
+    }
+
+    /// Remove the module and delete the device special file
+    pub fn unload() -> Result<(), nix::errno::Errno> {
         kmod::delete_module(
-            &CString::new(Self::DRV_NAME).expect("BUG"),
+            &CString::new(Self::DRV_NAME)
+                .expect("BUG: DRV_NAME cannot be converted to C string"),
             kmod::DeleteModuleFlags::O_NONBLOCK,
         )?;
         unistd::unlink(Self::DEV_PATH)?;
         Ok(())
     }
 
-    fn mknod(&self) -> Result<(), nix::errno::Errno> {
-        stat::mknod(
+    /// Create the device special file
+    ///
+    /// Returns no error if the file already exists
+    pub fn mknod(self) -> Result<Self, nix::errno::Errno> {
+        if let Err(err) = stat::mknod(
             Self::DEV_PATH,
             stat::SFlag::S_IFCHR,
             stat::Mode::S_IRUSR | stat::Mode::S_IRGRP | stat::Mode::S_IROTH,
             stat::makedev(self.major as u64, 0),
-        )
+        ) {
+            if err != errno::Errno::EEXIST {
+                return Err(err);
+            }
+        };
+
+        Ok(self)
     }
 }
 
 pub mod ffi {
-    use super::LoadContext;
-    use nix::errno::Errno;
-    use std::ffi::{CStr,  c_char, c_int};
+    use super::InsmodContext;
+    use std::ffi::{c_char, c_int, CStr};
 
     #[no_mangle]
     /// pmem_load - load the linpmem driver
@@ -163,20 +220,26 @@ pub mod ffi {
 
         let path = unsafe { CStr::from_ptr(path) }.to_str();
         let Ok(path) = path else { return -1; };
-        let ctx = LoadContext::build(path);
-        let Ok(ctx) = ctx else { return -1; };
 
-        let mut res = ctx.load();
-        if let Err(errno) = res {
-            return errno as c_int;
-        }
+        let ctx = InsmodContext::build(false, path, None);
+        let Ok(ctx) = ctx else {
+            return -1;
+        };
 
-        res = ctx.mknod();
-        if let Err(errno) = res {
-            if errno != Errno::EEXIST {
-                return errno as c_int;
-            }
-        }
+        let ctx = ctx.adjust();
+        let Ok(ctx) = ctx else {
+            return -1;
+        };
+
+        let ctx = ctx.load();
+        let Ok(ctx) = ctx else {
+            return ctx.unwrap_err() as c_int;
+        };
+
+        let ctx = ctx.mknod();
+        if let Err(err) = ctx {
+            return err as c_int;
+        };
 
         0
     }
@@ -188,7 +251,7 @@ pub mod ffi {
     ///
     /// Returns zero on success, or -EXXX on failure
     pub extern "C" fn pmem_unload() -> c_int {
-        match LoadContext::unload() {
+        match InsmodContext::unload() {
             Err(errno) => return errno as c_int,
             Ok(()) => 0,
         }
@@ -199,24 +262,10 @@ pub fn run(cli: &InsmodCli) -> Result<(), Box<dyn Error>> {
     utils::check_root()?;
 
     if cli.rm {
-        return Ok(LoadContext::unload()?);
+        return Ok(InsmodContext::unload()?);
     }
 
-    let ctx = LoadContext::from_cli(cli)?;
+    InsmodContext::from_cli(cli)?.adjust()?.load()?.mknod()?;
 
-    ctx.load()?;
-
-    match ctx.mknod() {
-        Ok(()) => Ok(()),
-        Err(e) => match e {
-            nix::errno::Errno::EEXIST => {
-                println!(
-                    "Reusing existing device file {}",
-                    LoadContext::DEV_PATH
-                );
-                Ok(())
-            }
-            _ => Err(Box::new(e)),
-        },
-    }
+    Ok(())
 }

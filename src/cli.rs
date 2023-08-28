@@ -63,6 +63,10 @@ pub struct InsmodCli {
     /// Path to a valid driver for the running kernel
     #[arg(long)]
     pub valid_driver: Option<String>,
+
+    /// Display debug output
+    #[arg(short, long, default_value_t=false)]
+    pub verbose: bool,
 }
 
 #[derive(Parser, Debug)]

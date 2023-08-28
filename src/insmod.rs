@@ -5,20 +5,22 @@ use nix::{self, errno, kmod, unistd};
 use std::error::Error;
 use std::ffi::CString;
 use std::fs;
+use log::{debug, error};
 
 mod loader;
 
 mod kallsyms {
-    use std::error::Error;
+    use anyhow::{anyhow, bail, Context};
     use std::fs;
     use std::io::{self, BufRead, Read, Seek, Write};
 
     /// Do a lookup of a name in /proc/kallsyms
-    pub fn lookup(name: &str) -> Result<u64, Box<dyn Error>> {
+    pub fn lookup(name: &str) -> anyhow::Result<u64> {
         let mut kptr_restrict = fs::File::options()
             .read(true)
             .write(true)
-            .open("/proc/sys/kernel/kptr_restrict")?;
+            .open("/proc/sys/kernel/kptr_restrict")
+            .context("Failed to open sysctl kptr_restrict")?;
         let mut old = [0; 1];
         kptr_restrict.read_exact(&mut old)?;
         if old[0] == b'2' {
@@ -45,19 +47,18 @@ mod kallsyms {
         }
 
         if matches.len() != 1 {
-            return Err(format!(
-                "Found {} matches for {} in kallsyms",
+            bail!(
+                "Found {} matches for {} in kallsyms, expected 1",
                 matches.len(),
                 name
-            )
-            .into());
+            );
         }
 
         let address: u64 =
             u64::from_str_radix(matches[0].split(' ').next().unwrap(), 16)?;
 
         if address == 0 {
-            Err(format!("Address of {} in kallsyms is zero", name).into())
+            Err(anyhow!("Address of {} in kallsyms is zero", name))
         } else {
             Ok(address)
         }
@@ -96,10 +97,11 @@ impl InsmodContext {
         valid_module: Option<&String>,
     ) -> Result<Self, Box<dyn Error>> {
         let valid_module = if adjust {
-            Some(loader::mod_to_vec_decompress(match valid_module {
-                Some(path) => fs::File::open(path)?,
+            let (valid_module, name) = match valid_module {
+                Some(path) => (fs::File::open(path)?, path.to_owned()),
                 None => loader::find_valid_module()?,
-            })?)
+            };
+            Some(loader::mod_to_vec_decompress(valid_module, name)?)
         } else {
             None
         };
@@ -120,24 +122,31 @@ impl InsmodContext {
     }
 
     fn build_param(major: u32) -> Result<CString, Box<dyn Error>> {
+        let mut param = format!("major={}", major);
         let res = kallsyms::lookup("kallsyms_lookup_name");
 
         if let Ok(kallsyms_lookup_name) = res {
-            return Ok(CString::new(format!(
-                "kallsyms_lookup_name={} major={}",
-                kallsyms_lookup_name, major
-            ))?);
+            param.push_str(format!(
+                " kallsyms_lookup_name={}",
+                kallsyms_lookup_name
+            ).as_str());
+        } else {
+            debug!(
+                "User space kallsyms -> kallsyms_lookup_name failed: {}",
+                res.unwrap_err()
+            );
         }
-        println!(
-            "User space kallsyms -> kallsyms_lookup_name failed: {}",
-            res.unwrap_err()
-        );
 
-        Err("Unable to build module parameters".into())
+        debug!("module load parameters: {}", param);
+
+        Ok(CString::new(param)?)
     }
 
     /// Adjusts the module to the running kernel
     pub fn adjust(self) -> Result<Self, Box<dyn Error>> {
+        if !self.adjust {
+            return Ok(self);
+        }
         Ok(Self {
             adjusted_module: Some(loader::adjust_module(
                 &self.module,
@@ -154,22 +163,30 @@ impl InsmodContext {
     /// Either loads the unmodified module from directly a file or loads the
     /// adjusted module from a buffer.
     pub fn load(self) -> Result<Self, nix::errno::Errno> {
+        let res;
+
         if self.adjust {
-            kmod::init_module(
+            res = kmod::init_module(
                 self.adjusted_module
                     .as_ref()
                     .expect("BUG: adjusted_module was None"),
                 self.param.as_c_str(),
-            )?;
+            );
         } else {
-            kmod::finit_module(
+            res = kmod::finit_module(
                 &self.module,
                 self.param.as_c_str(),
                 kmod::ModuleInitFlags::empty(),
-            )?;
+            );
         }
 
-        Ok(self)
+        match res {
+            Ok(()) => Ok(self),
+            Err(err) => {
+                error!("Module was rejected by kernel: {}", err);
+                Err(err)
+            },
+        }
     }
 
     /// Remove the module and delete the device special file

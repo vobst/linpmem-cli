@@ -28,9 +28,13 @@ path = "src/bin/loader.rs"
 strip = "symbols"
 
 [dependencies]
+anyhow = "1.0.75"
 clap = { version = "4.3.21", features = ["derive"] }
+env_logger = "0.10.0"
+log = "0.4.20"
 nix = { version = "0.26.2", features = ["ioctl", "kmod"] }
 num-traits = "0.2.16"
+ruzstd = "0.4.0"
 
 [build-dependencies]
 cbindgen = "0.25.0"

@@ -1,4 +1,5 @@
 use anyhow::{bail, Context};
+use goblin;
 use log::debug;
 use nix::sys::utsname;
 use ruzstd;
@@ -25,12 +26,12 @@ impl TryFrom<&str> for ModuleCompression {
         } else if name.ends_with(".ko.gz") {
             return Ok(Self::Gz);
         } else {
-            bail!("Module {} has unkown compression", name)
+            bail!("Module {} uses unkown compression", name)
         }
     }
 }
 
-/// Searches for a module that is likely to be compatible to the running kernel.
+/// Searches for a module that is likely to be compatible to the running kernel
 pub fn find_valid_module() -> anyhow::Result<(fs::File, String)> {
     let search_prefix = path::PathBuf::from(format!(
         "/usr/lib/modules/{}/",
@@ -106,12 +107,35 @@ pub fn mod_to_vec_decompress<T: AsRef<str> + Display>(
     Ok(vec)
 }
 
+/// Values gathered from the environment that are needed to adjust the module
+struct AdjustContext {
+    vermagic: String,
+}
+
+impl AdjustContext {
+    fn build(valid_module: &Vec<u8>) -> anyhow::Result<Self> {
+        let goblin::Object::Elf(elf) = goblin::Object::parse(valid_module)
+            .context("Failed to parse valid module")? else {
+                bail!("Valid module is not an ELF file");
+            };
+        let vermagic = String::from(
+            kmod_parser::Modinfo::build(valid_module, &elf)?
+                .get_value("vermagic")?,
+        );
+        debug!("Valid module has vermagic {}", &vermagic);
+
+        Ok(Self { vermagic })
+    }
+}
+
 /// Performs various adjustments to a module in order to make it loadable for
 /// the current kernel.
 pub fn adjust_module(
     module: &fs::File,
-    _valid_module: &Vec<u8>,
+    valid_module: &Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
+    let ctx = AdjustContext::build(valid_module)?;
+
     let mut adjusted_module = Vec::new();
     module
         .try_clone()?
@@ -120,3 +144,52 @@ pub fn adjust_module(
 
     Ok(adjusted_module)
 }
+
+mod kmod_parser {
+    use anyhow::{bail, Context};
+    use goblin::{elf, strtab};
+
+    pub struct Modinfo<'a> {
+        strtab: strtab::Strtab<'a>,
+    }
+
+    impl<'a> Modinfo<'a> {
+        pub fn build(raw: &'a Vec<u8>, elf: &elf::Elf) -> anyhow::Result<Self> {
+            let sh_modinfo = find_sh_by_name(elf, ".modinfo")?;
+            let modinfo = strtab::Strtab::parse(
+                raw,
+                sh_modinfo.sh_offset as usize,
+                sh_modinfo.sh_size as usize,
+                b'\0',
+            ).context(".modinfo section cannot be parsed as string table")?;
+
+            Ok(Self { strtab: modinfo })
+        }
+
+        pub fn get_value(&self, key: &str) -> anyhow::Result<&'a str> {
+            for kv in self.strtab.to_vec()? {
+                let kv: Vec<&str> = kv.split('=').collect();
+                if kv[0] == key {
+                    return Ok(kv[1]);
+                }
+            }
+            bail!("Unable to find key {} in modinfo", key)
+        }
+    }
+
+    fn find_sh_by_name<'a>(
+        elf: &'a elf::Elf,
+        name: &str,
+    ) -> anyhow::Result<&'a goblin::elf::SectionHeader> {
+        let shstrtab = &elf.shdr_strtab;
+        for sh in &elf.section_headers {
+            let sh_name =
+                shstrtab.get_at(sh.sh_name).context("Corrupted ELF file")?;
+            if sh_name == name {
+                return Ok(sh);
+            }
+        }
+        bail!("Unable to find section {}", name);
+    }
+}
+

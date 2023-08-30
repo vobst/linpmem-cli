@@ -6,10 +6,11 @@ use std::error::Error;
 mod cli;
 pub mod insmod;
 mod ioctl;
+mod pte;
 mod utils;
 
-pub use crate::cli::{Cli, LoaderCli};
 use crate::cli::Subcommands;
+pub use crate::cli::{Cli, LoaderCli};
 use crate::ioctl::{Driver, IOCtlCmd};
 
 pub fn run(cli: &Cli) -> Result<(), Box<dyn Error>> {
@@ -31,5 +32,6 @@ pub fn run(cli: &Cli) -> Result<(), Box<dyn Error>> {
         IOCtlCmd::ReadPhys(address, mode, size) => {
             Ok(drv.read_phys(address, mode, size)?)
         }
+        IOCtlCmd::CacheControl(pte_parts) => Ok(drv.cache_control(pte_parts)?),
     }
 }

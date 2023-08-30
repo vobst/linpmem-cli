@@ -1,5 +1,6 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use num_traits::{sign, Num};
+use crate::pte::PteParts;
 
 #[derive(ValueEnum, Clone, Debug, Copy)]
 pub enum AccessMode {
@@ -107,6 +108,11 @@ pub struct Cli {
     #[arg(value_enum, short, long, rename_all = "lower", requires("address"))]
     pub mode: Option<AccessMode>,
 
+    /// Update the driver's PTE template. Expects a comma-separated list of pte
+    /// parts. Leave empty to query the current value.
+    #[arg(value_enum, long, num_args = 0.., value_delimiter = ',')]
+    pub pte_parts: Option<Vec<PteParts>>,
+
     /// Write the hex-encoded byte sequence
     #[arg(short, long, requires("address"))]
     pub write: Option<String>,
@@ -118,4 +124,8 @@ pub struct Cli {
     /// Query cr3 value of target process (default: current process)
     #[arg(long, default_value_t = false)]
     pub cr3: bool,
+
+    /// Display debug output
+    #[arg(long, default_value_t=false)]
+    pub verbose: bool,
 }

@@ -3,14 +3,24 @@
  */
 
 use clap::Parser;
+use env_logger;
+use log;
 use pmem::Cli;
 use std::process;
 
 fn main() {
     let cli = Cli::parse();
 
+    env_logger::Builder::new()
+        .filter_level(if cli.verbose {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Error
+        })
+        .init();
+
     if let Err(err) = pmem::run(&cli) {
-        eprintln!("Application error: {err}");
+        eprintln!("Error: {err}");
         process::exit(1);
     }
 }

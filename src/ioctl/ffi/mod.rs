@@ -122,8 +122,6 @@ pub fn cache_control_get(fd: fd::RawFd) -> Result<u64, nix::errno::Errno> {
         },
     };
 
-    debug!("Sending cache control operation {:?}", &cache_control.op);
-
     let _result = unsafe { unsafe_cache_control(fd, &mut cache_control) }?;
 
     Ok(unsafe { cache_control.__bindgen_anon_1.template_pte })
@@ -139,9 +137,6 @@ pub fn cache_control_set(
             template_pte: pte.value,
         },
     };
-
-    debug!("Sending cache control operation {:?}", &cache_control.op);
-    debug!("Sending cache control PTE {:?}", pte.value);
 
     let _result = unsafe { unsafe_cache_control(fd, &mut cache_control) }?;
 

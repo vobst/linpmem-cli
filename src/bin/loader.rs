@@ -11,11 +11,13 @@ use std::process;
 fn main() {
     let cli = LoaderCli::parse();
 
-    env_logger::Builder::new().filter_level(if cli.args.verbose {
-        log::LevelFilter::Debug
-    } else {
-        log::LevelFilter::Error
-    }).init();
+    env_logger::Builder::new()
+        .filter_level(if cli.args.verbose {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Error
+        })
+        .init();
 
     if let Err(err) = pmem::insmod::run(&cli.args) {
         eprintln!("Error: {err}");

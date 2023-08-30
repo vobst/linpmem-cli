@@ -27,39 +27,39 @@ pub enum PteParts {
 impl PteParts {
     fn shift(&self) -> u64 {
         match self {
-            &Self::Xd => (63),
-            &Self::Pk => (59),
-            &Self::Avl1 => (52),
-            &Self::Pfn => (12),
-            &Self::Avl2 => (9),
-            &Self::G => (8),
-            &Self::Pat => (7),
-            &Self::D => (6),
-            &Self::A => (5),
-            &Self::Pcd => (4),
-            &Self::Pwt => (3),
-            &Self::Us => (2),
-            &Self::Rw => (1),
-            &Self::P => (0),
+            &Self::Xd => 63,
+            &Self::Pk => 59,
+            &Self::Avl1 => 52,
+            &Self::Pfn => 12,
+            &Self::Avl2 => 9,
+            &Self::G => 8,
+            &Self::Pat => 7,
+            &Self::D => 6,
+            &Self::A => 5,
+            &Self::Pcd => 4,
+            &Self::Pwt => 3,
+            &Self::Us => 2,
+            &Self::Rw => 1,
+            &Self::P => 0,
         }
     }
 
     fn mask(&self) -> u64 {
         match self {
-            &Self::Xd => ((1 as u64) << 63),
-            &Self::Pk => ((0xF as u64) << 59),
-            &Self::Avl1 => ((0x7F as u64) << 52),
-            &Self::Pfn => ((0xFFFFFFFFFF as u64) << 12),
-            &Self::Avl2 => ((7 as u64) << 9),
-            &Self::G => ((1 as u64) << 8),
-            &Self::Pat => ((1 as u64) << 7),
-            &Self::D => ((1 as u64) << 6),
-            &Self::A => ((1 as u64) << 5),
-            &Self::Pcd => ((1 as u64) << 4),
-            &Self::Pwt => ((1 as u64) << 3),
-            &Self::Us => ((1 as u64) << 2),
-            &Self::Rw => ((1 as u64) << 1),
-            &Self::P => ((1 as u64) << 0),
+            &Self::Xd => (1 as u64) << 63,
+            &Self::Pk => (0xF as u64) << 59,
+            &Self::Avl1 => (0x7F as u64) << 52,
+            &Self::Pfn => (0xFFFFFFFFFF as u64) << 12,
+            &Self::Avl2 => (7 as u64) << 9,
+            &Self::G => (1 as u64) << 8,
+            &Self::Pat => (1 as u64) << 7,
+            &Self::D => (1 as u64) << 6,
+            &Self::A => (1 as u64) << 5,
+            &Self::Pcd => (1 as u64) << 4,
+            &Self::Pwt => (1 as u64) << 3,
+            &Self::Us => (1 as u64) << 2,
+            &Self::Rw => (1 as u64) << 1,
+            &Self::P => (1 as u64) << 0,
         }
     }
 }
@@ -119,13 +119,13 @@ impl Pte {
     }
 
     fn pk(mut self, value: u64) -> Self {
-        self.value |= ((value << PteParts::Pk.shift()) & PteParts::Pk.mask());
+        self.value |= (value << PteParts::Pk.shift()) & PteParts::Pk.mask();
 
         self
     }
 
     fn pfn(mut self, value: u64) -> Self {
-        self.value |= ((value << PteParts::Pfn.shift()) & PteParts::Pfn.mask());
+        self.value |= (value << PteParts::Pfn.shift()) & PteParts::Pfn.mask();
 
         self
     }

@@ -7,7 +7,7 @@ use crate::pte::Pte;
 use nix::ioctl_readwrite;
 use std::os::fd;
 use std::ptr;
-use log::debug;
+
 
 ioctl_readwrite!(
     unsafe_read_write_pyhs,

@@ -134,7 +134,7 @@ pub fn adjust_module(
     module: &fs::File,
     valid_module: &Vec<u8>,
 ) -> anyhow::Result<Vec<u8>> {
-    let ctx = AdjustContext::build(valid_module)?;
+    let _ctx = AdjustContext::build(valid_module)?;
 
     let mut adjusted_module = Vec::new();
     module

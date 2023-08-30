@@ -50,7 +50,7 @@ impl PteParts {
             &Self::Pk => ((0xF as u64) << 59),
             &Self::Avl1 => ((0x7F as u64) << 52),
             &Self::Pfn => ((0xFFFFFFFFFF as u64) << 12),
-            &Self::Avl2 => ((3 as u64) << 9),
+            &Self::Avl2 => ((7 as u64) << 9),
             &Self::G => ((1 as u64) << 8),
             &Self::Pat => ((1 as u64) << 7),
             &Self::D => ((1 as u64) << 6),
@@ -64,22 +64,6 @@ impl PteParts {
     }
 }
 
-impl TryFrom<&str> for PteParts
-{
-    type Error = anyhow::Error;
-
-    fn try_from(value: &str) -> anyhow::Result<PteParts> {
-        Ok(match value.as_ref() {
-            "xd" => PteParts::Xd,
-            "pk" => PteParts::Pk,
-            "avl1" => PteParts::Avl1,
-            "pfn" => PteParts::Pfn,
-            "avl2" =>PteParts::Avl2,
-            x => bail!("Cannot parse {} as PTE part", x),
-        })
-    }
-}
-
 impl From<u64> for Pte {
     fn from(value: u64) -> Self {
         Self {
@@ -90,8 +74,7 @@ impl From<u64> for Pte {
 
 impl Display for Pte {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result{
-        println!("0x{:016x}", self.value);
-        Ok(())
+        write!(f, "0x{:016x}", self.value)
     }
 }
 

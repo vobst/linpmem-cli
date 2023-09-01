@@ -801,6 +801,8 @@ pub const LINPMEM_CACHE_CONTROL_OPERATION_CCO_SET_TEMPLATE_PTE:
     LINPMEM_CACHE_CONTROL_OPERATION = 0;
 pub const LINPMEM_CACHE_CONTROL_OPERATION_CCO_GET_TEMPLATE_PTE:
     LINPMEM_CACHE_CONTROL_OPERATION = 1;
+pub const LINPMEM_CACHE_CONTROL_OPERATION_CCO_GET_PAT:
+    LINPMEM_CACHE_CONTROL_OPERATION = 2;
 pub type LINPMEM_CACHE_CONTROL_OPERATION = ::std::os::raw::c_uint;
 #[repr(C)]
 #[derive(Copy, Clone)]
@@ -812,6 +814,7 @@ pub struct _LINPMEM_CACHE_CONTROL {
 #[derive(Copy, Clone)]
 pub union _LINPMEM_CACHE_CONTROL__bindgen_ty_1 {
     pub template_pte: u64,
+    pub pat: [u8; 8usize],
 }
 #[test]
 fn bindgen_test_layout__LINPMEM_CACHE_CONTROL__bindgen_ty_1() {
@@ -845,6 +848,16 @@ fn bindgen_test_layout__LINPMEM_CACHE_CONTROL__bindgen_ty_1() {
             stringify!(_LINPMEM_CACHE_CONTROL__bindgen_ty_1),
             "::",
             stringify!(template_pte)
+        )
+    );
+    assert_eq!(
+        unsafe { ::std::ptr::addr_of!((*ptr).pat) as usize - ptr as usize },
+        0usize,
+        concat!(
+            "Offset of field: ",
+            stringify!(_LINPMEM_CACHE_CONTROL__bindgen_ty_1),
+            "::",
+            stringify!(pat)
         )
     );
 }

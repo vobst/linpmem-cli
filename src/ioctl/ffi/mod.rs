@@ -1,13 +1,13 @@
+//! Safe bindings for all IOCTLs supported by the driver
+
 /// cbindgen:ignore
 #[allow(non_upper_case_globals, unused, non_camel_case_types)]
 mod bindings;
 
 use crate::cli::AccessMode;
-use crate::pte::Pte;
 use nix::ioctl_readwrite;
 use std::os::fd;
 use std::ptr;
-
 
 ioctl_readwrite!(
     unsafe_read_write_pyhs,
@@ -17,12 +17,28 @@ ioctl_readwrite!(
 );
 ioctl_readwrite!(unsafe_v_to_p, b'a', b'b', bindings::LINPMEM_VTOP_INFO);
 ioctl_readwrite!(unsafe_cr3, b'a', b'c', bindings::LINPMEM_CR3_INFO);
-ioctl_readwrite!(
-    unsafe_cache_control,
-    b'a',
-    b'd',
-    bindings::LINPMEM_CACHE_CONTROL
-);
+
+impl From<AccessMode> for u8 {
+    fn from(value: AccessMode) -> u8 {
+        match value {
+            AccessMode::Byte => {
+                bindings::_PHYS_ACCESS_MODE_PHYS_BYTE_READ as u8
+            }
+            AccessMode::Word => {
+                bindings::_PHYS_ACCESS_MODE_PHYS_WORD_READ as u8
+            }
+            AccessMode::Dword => {
+                bindings::_PHYS_ACCESS_MODE_PHYS_DWORD_READ as u8
+            }
+            AccessMode::Qword => {
+                bindings::_PHYS_ACCESS_MODE_PHYS_QWORD_READ as u8
+            }
+            AccessMode::Buffer => {
+                bindings::_PHYS_ACCESS_MODE_PHYS_BUFFER_READ as u8
+            }
+        }
+    }
+}
 
 pub fn read_phys(
     fd: fd::RawFd,
@@ -41,23 +57,7 @@ pub fn read_phys(
             _ => ptr::null_mut(),
         },
         readbuffer_size: size.unwrap_or(0),
-        access_type: match mode {
-            AccessMode::Byte => {
-                bindings::_PHYS_ACCESS_MODE_PHYS_BYTE_READ as u8
-            }
-            AccessMode::Word => {
-                bindings::_PHYS_ACCESS_MODE_PHYS_WORD_READ as u8
-            }
-            AccessMode::Dword => {
-                bindings::_PHYS_ACCESS_MODE_PHYS_DWORD_READ as u8
-            }
-            AccessMode::Qword => {
-                bindings::_PHYS_ACCESS_MODE_PHYS_QWORD_READ as u8
-            }
-            AccessMode::Buffer => {
-                bindings::_PHYS_ACCESS_MODE_PHYS_BUFFER_READ as u8
-            }
-        },
+        access_type: u8::from(mode),
         write_access: 0,
         reserved1: 0,
         reserved2: 0,
@@ -112,33 +112,4 @@ pub fn cr3(fd: fd::RawFd, pid: Option<u32>) -> Result<u64, nix::errno::Errno> {
     let _result = unsafe { unsafe_cr3(fd, &mut data_transfer) }?;
 
     Ok(data_transfer.result_cr3)
-}
-
-pub fn cache_control_get(fd: fd::RawFd) -> Result<u64, nix::errno::Errno> {
-    let mut cache_control = bindings::LINPMEM_CACHE_CONTROL {
-        op: bindings::LINPMEM_CACHE_CONTROL_OPERATION_CCO_GET_TEMPLATE_PTE,
-        __bindgen_anon_1: bindings::_LINPMEM_CACHE_CONTROL__bindgen_ty_1 {
-            template_pte: 0,
-        },
-    };
-
-    let _result = unsafe { unsafe_cache_control(fd, &mut cache_control) }?;
-
-    Ok(unsafe { cache_control.__bindgen_anon_1.template_pte })
-}
-
-pub fn cache_control_set(
-    fd: fd::RawFd,
-    pte: Pte,
-) -> Result<(), nix::errno::Errno> {
-    let mut cache_control = bindings::LINPMEM_CACHE_CONTROL {
-        op: bindings::LINPMEM_CACHE_CONTROL_OPERATION_CCO_SET_TEMPLATE_PTE,
-        __bindgen_anon_1: bindings::_LINPMEM_CACHE_CONTROL__bindgen_ty_1 {
-            template_pte: pte.value,
-        },
-    };
-
-    let _result = unsafe { unsafe_cache_control(fd, &mut cache_control) }?;
-
-    Ok(())
 }

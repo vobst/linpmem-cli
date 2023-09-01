@@ -1,10 +1,6 @@
-use crate::cli::AccessMode;
-use crate::cli::Cli;
+use crate::cli::{AccessMode, Cli};
 use crate::insmod::InsmodContext;
-use crate::pte::Pte;
-use crate::pte::PteParts;
 use anyhow::{bail, Context};
-use log::debug;
 use std::error::Error;
 use std::fs::File;
 use std::io::{self, Write};
@@ -13,32 +9,19 @@ use std::os::fd::AsRawFd;
 mod ffi;
 
 #[derive(Debug)]
-pub enum IOCtlCmd<'a> {
+pub enum IOCtlCmd {
     VtoP(u64, Option<u32>),
     Cr3(Option<u32>),
     ReadPhys(u64, AccessMode, Option<u64>),
-    WritePhys(u64, AccessMode, Vec<u8>),
-    CacheControl(&'a Vec<PteParts>),
 }
 
-impl<'a> IOCtlCmd<'a> {
-    pub fn from_cli(cli: &'a Cli) -> anyhow::Result<Self> {
-        if let Some(pte_parts) = cli.pte_parts.as_ref() {
-            debug!("Running cache control with pte parts: {:?}", pte_parts);
-            return Ok(IOCtlCmd::CacheControl(pte_parts));
-        }
+impl IOCtlCmd {
+    pub fn from_cli(cli: &Cli) -> anyhow::Result<Self> {
         if cli.cr3 {
-            return Ok(IOCtlCmd::Cr3(cli.pid));
+            return Ok(Self::Cr3(cli.pid));
         }
         if let Some(virt_address) = cli.virt_address {
             return Ok(Self::VtoP(virt_address, cli.pid));
-        }
-        if let Some(_hex_string) = cli.write.clone() {
-            return Ok(Self::WritePhys(
-                cli.address.unwrap(), // ok as Clap enforces them if write
-                cli.mode.unwrap(),    // is given
-                Vec::new(),
-            ));
         }
         if let Some(address) = cli.address {
             return Ok(Self::ReadPhys(address, cli.mode.unwrap(), cli.size));
@@ -81,15 +64,6 @@ impl Driver {
         Ok(())
     }
 
-    pub fn write_phys(
-        &self,
-        _address: u64,
-        _mode: AccessMode,
-        _data: Vec<u8>,
-    ) -> Result<(), &'static str> {
-        Err("Writing of physical memory is not implemented")
-    }
-
     pub fn read_phys(
         &self,
         address: u64,
@@ -100,24 +74,6 @@ impl Driver {
 
         io::stdout().write_all(mem.as_slice())?;
 
-        Ok(())
-    }
-
-    pub fn cache_control(
-        &self,
-        pte_parts: &Vec<PteParts>,
-    ) -> anyhow::Result<()> {
-        if pte_parts.is_empty() {
-            debug!("Querying current template PTE");
-            let template_pte = Pte::try_from(ffi::cache_control_get(
-                self.handle.as_raw_fd(),
-            )?)?;
-            println!("{}", template_pte)
-        } else {
-            let pte = Pte::try_from(pte_parts)?;
-            debug!("Setting template PTE to {}", pte);
-            ffi::cache_control_set(self.handle.as_raw_fd(), pte)?;
-        }
         Ok(())
     }
 }

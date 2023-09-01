@@ -1,6 +1,6 @@
 # pmem
 
-`pmem` is a small tool for loading and interacting with the [linpmem driver](). It lets you use the features of the driver in scripts and on the command line. At the same time, this repository also provides a library that can be used by other programs that want to interface with the driver. The command-line application is simply a thin wrapper around this library.
+`pmem` is a small tool for loading and interacting with the [linpmem driver](https://github.com/velocidex/linpmem). It lets you use the features of the driver in scripts and on the command line. At the same time, this repository also provides a library that can be used by other programs that want to interface with the driver. The command-line application is simply a thin wrapper around this library.
 
 ## Building
 
@@ -30,7 +30,7 @@ cargo build --release
 ```
 This will generate two static binaries located at `target/x86_64-unknown-linux-musl/release/`:
 - `pmem`: The fully-featured command-line client.
-- `loader`: A smaller program that is containing only the module loader and unloader.
+- `loader`: A smaller program that contains only the functionality needed to load and unload the driver.
 
 ## Installation
 
@@ -40,7 +40,7 @@ cargo install --path . --locked
 ```
 This command will install the `pmem` and `loader` binaries into Cargo's bin folder, e.g., `$HOME/.cargo/bin`.
 
-Note: This will install the programs for the _current_ user, which is hopefully not the root user. In case you experience any troubles when running them through sudo or in a root shell, remember to add the binaries to root's PATH.
+Note: This will install the programs for the _current_ user, which is hopefully not the root user. In case you experience any troubles when running them through `sudo` or in a root shell, remember to add the binaries to root's PATH.
 
 ## Uninstall
 
@@ -55,11 +55,14 @@ rm -rf path/to/linpmem-cli
 
 ## Usage
 
-`pmem` is a command-line client for the `linpmem` driver. Thus, you first have to [build the driver](). Assuming that you managed to successfully build the driver, load it with the `insmod` subcommand:
+`pmem` is a command-line client for the `linpmem` driver. Thus, you first have to [build the driver](https://github.com/velocidex/linpmem#building). Assuming that you managed to successfully build the driver, load it with the `insmod` subcommand:
 ```
 pmem insmod path/to/linpmem.ko
 ```
-_Note: We are using a custom module loader, thus the system's `insmod` or `modprobe` binaries will not work._
+or the stand-alone loader
+```
+loader path/to/linpmem.ko
+```
 
 Now, you can use `pmem` to interact with the driver:
 ```
@@ -76,7 +79,7 @@ Commands:
 
 Options:
   -a, --address <ADDRESS>
-          Address for physical read/write operations
+          Address for physical read operations
 
   -v, --virt-address <VIRT_ADDRESS>
           Translate address in target process' address space (default: current process)
@@ -85,12 +88,9 @@ Options:
           Size of buffer read operations
 
   -m, --mode <MODE>
-          Access mode for read and write operations
+          Access mode for read operations
 
           [possible values: byte, word, dword, qword, buffer]
-
-  -w, --write <WRITE>
-          Write the hex-encoded byte sequence
 
   -p, --pid <PID>
           Target process for cr3 info and virtual-to-physical translations
@@ -98,16 +98,38 @@ Options:
       --cr3
           Query cr3 value of target process (default: current process)
 
+      --verbose
+          Display debug output
+
   -h, --help
           Print help (see a summary with '-h')
 
   -V, --version
           Print version
+
 ```
 By default, memory contents are written to stdout as raw bytes. Thus, you might want to use `xxd` to make them more human-friendly:
 ```
-$ pmem --address 0x1ffe0040 -m buffer -s 16 | xxd
-00000000: 4453 4454 7818 0000 0170 424f 4348 5320  DSDTx....pBOCHS
+# echo 1 > /proc/sys/kernel/kptr_restrict
+$ sudo cat /proc/kallsyms | grep ' linux_banner$'
+ffffffff9823bf20 D linux_banner
+$ pmem -v 0xffffffff9823bf20
+0x000000070923bf20
+$ pmem -a 0x000000070923bf20 -m buffer -s 0x1000 | xxd
+00000000: 4c69 6e75 7820 7665 7273 696f 6e20 362e  Linux version 6.
+00000010: 342e 3131 2d68 6172 6465 6e65 6431 2d31  4.11-hardened1-1
+00000020: 2d68 6172 6465 6e65 6420 286c 696e 7578  -hardened (linux
+00000030: 2d68 6172 6465 6e65 6440 6172 6368 6c69  -hardened@archli
+00000040: 6e75 7829 2028 6763 6320 2847 4343 2920  nux) (gcc (GCC)
+00000050: 3133 2e32 2e31 2032 3032 3330 3830 312c  13.2.1 20230801,
+00000060: 2047 4e55 206c 6420 2847 4e55 2042 696e   GNU ld (GNU Bin
+00000070: 7574 696c 7329 2032 2e34 312e 3029 2023  utils) 2.41.0) #
+00000080: 3120 534d 5020 5052 4545 4d50 545f 4459  1 SMP PREEMPT_DY
+00000090: 4e41 4d49 4320 5475 652c 2032 3220 4175  NAMIC Tue, 22 Au
+000000a0: 6720 3230 3233 2031 393a 3234 3a31 3920  g 2023 19:24:19
+000000b0: 2b30 3030 300a 0000 81c9 0200 0000 0000  +0000...........
+000000c0: 0b41 a578 65f5 70f2 63b0 d013 0941 ff70  .A.xe.p.c....A.p
+000000d0: f2e9 b093 7274 0841 63b0 5f3b fca4 f40d  ....rt.Ac._;....
 ```
 
 ## Library
@@ -118,10 +140,12 @@ The normal build process also generates a static C library `libpmem.a` as well a
 
 ## Troubleshooting
 
-At this point, a word of caution may be in order. Reading and writing arbitrary physical memory is considered dangerous. If you do not know what you are doing, DO NOT USE THIS TOOL.
+At this point, a word of caution may be in order. Reading arbitrary physical memory is considered dangerous. If you do not know what you are doing, DO NOT USE THIS TOOL.
 
-For all the others, a good point to start may be the driver logs, simply:
+For all the others, a good point to start debugging may be taking a look at the driver logs, simply:
 ```
-cat /proc/kmsg | grep linpmem
+sudo journalctl --since today -g linpmem
 ```
-They can be made more verbose by building the driver with `DEBUG` defined. If you come to the conclusion that the problem is with the `pmem` tool and not the driver, please open an issue.
+They can be made more verbose by building the driver with `DEBUG` defined. The user-space tools will also display debug output when being run with the `--verbose` flag.
+
+If you come to the conclusion that the problem is with the `pmem` tool and not the driver, please open an issue.

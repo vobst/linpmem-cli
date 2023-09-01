@@ -1,6 +1,5 @@
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use num_traits::{sign, Num};
-use crate::pte::PteParts;
 
 #[derive(ValueEnum, Clone, Debug, Copy)]
 pub enum AccessMode {
@@ -54,19 +53,11 @@ pub struct InsmodCli {
     pub kmod_path: Option<String>,
 
     /// Unload the driver and remove its device file
-    #[arg(short, long, default_value_t=false)]
+    #[arg(short, long, default_value_t = false)]
     pub rm: bool,
 
-    /// Adjust the driver to the running kernel before loading
-    #[arg(short, long, default_value_t=false)]
-    pub adjust: bool,
-
-    /// Path to a valid driver for the running kernel
-    #[arg(long)]
-    pub valid_driver: Option<String>,
-
     /// Display debug output
-    #[arg(short, long, default_value_t=false)]
+    #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
 }
 
@@ -92,7 +83,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub subcommand: Option<Subcommands>,
 
-    /// Address for physical read/write operations
+    /// Address for physical read operations
     #[arg(short, long, value_parser=maybe_hex::<u64>, requires("mode"))]
     pub address: Option<u64>,
 
@@ -104,18 +95,9 @@ pub struct Cli {
     #[arg(short, long, value_parser=maybe_hex::<u64>, required_if_eq("mode", "buffer"))]
     pub size: Option<u64>,
 
-    /// Access mode for read and write operations
+    /// Access mode for read operations
     #[arg(value_enum, short, long, rename_all = "lower", requires("address"))]
     pub mode: Option<AccessMode>,
-
-    /// Update the driver's PTE template. Expects a comma-separated list of pte
-    /// parts. Leave empty to query the current value.
-    #[arg(value_enum, long, num_args = 0.., value_delimiter = ',')]
-    pub pte_parts: Option<Vec<PteParts>>,
-
-    /// Write the hex-encoded byte sequence
-    #[arg(short, long, requires("address"))]
-    pub write: Option<String>,
 
     /// Target process for cr3 info and virtual-to-physical translations
     #[arg(short, long)]
@@ -126,6 +108,6 @@ pub struct Cli {
     pub cr3: bool,
 
     /// Display debug output
-    #[arg(long, default_value_t=false)]
+    #[arg(long, default_value_t = false)]
     pub verbose: bool,
 }

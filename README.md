@@ -53,6 +53,17 @@ and remove the source directory:
 rm -rf path/to/linpmem-cli
 ```
 
+## Binary Releases
+
+Releases include an archive with pre-compiled binaries. All releases will be signed with the key `8D91266A3EB09E08BCF789E8D9D17D7F231FFD45`. You can obtain the key via a keyserver:
+```
+gpg --keyserver hkps://keys.openpgp.org --recv-keys 8D91266A3EB09E08BCF789E8D9D17D7F231FFD45
+```
+You can now verify the signature with:
+```
+gpg --verify pmem_vX.Y.Z.tar.gz.asc pmem_vX.Y.Z.tar.gz
+```
+
 ## Usage
 
 `pmem` is a command-line client for the `linpmem` driver. Thus, you first have to [build the driver](https://github.com/velocidex/linpmem#building). Assuming that you managed to successfully build the driver, load it with the `insmod` subcommand:
